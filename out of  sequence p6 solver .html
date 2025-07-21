@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>P6 Relationship Corrector</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1093.0.min.js"></script>
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .tab-content {
+            display: none;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        .tab-button {
+            transition: all 0.3s ease;
+        }
+        .spinner {
+            border-top-color: #3498db;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+        .custom-file-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .table-container {
+            max-height: 40vh;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl p-8 space-y-8">
+
+        <div class="border-b border-gray-200">
+            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
+                <button id="tab-xer" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-blue-500 text-blue-600">
+                    XER Corrector
+                </button>
+                <button id="tab-xml" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
+                    XML Corrector
+                </button>
+            </nav>
+        </div>
+
+        <div id="content-xer" class="tab-content active">
+            <div class="space-y-6">
+                <div class="text-center">
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">P6 XER Relationship Corrector</h1>
+                    <p class="text-gray-600 mt-1">Upload your Primavera P6 XER file to automatically fix out-of-sequence logic.</p>
+                </div>
+                <div class="space-y-4">
+                    <div class="flex items-center justify-center w-full">
+                        <label for="file-upload-xer" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-gray-500">Primavera P6 XER file</p>
+                            </div>
+                            <input id="file-upload-xer" type="file" class="hidden" accept=".xer" />
+                        </label>
+                    </div>
+                    <p id="file-name-xer" class="text-center text-sm text-gray-500">No file selected</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="process-btn-xer" class="w-full sm:w-auto flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Process File</button>
+                    <button id="download-btn-xer" class="w-full sm:w-auto flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 custom-file-button" disabled>Download Corrected File</button>
+                </div>
+                <div id="spinner-xer" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
+                <div id="results-container-xer" class="space-y-4 hidden">
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-800">Processing Log</h3>
+                        <div id="log-xer" class="mt-2 p-3 bg-gray-900 text-white text-sm font-mono rounded-md h-32 overflow-y-auto"></div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-800">Modified Relationships</h3>
+                        <div class="table-container mt-2 border border-gray-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predecessor ID</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Successor ID</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-table-xer" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                         <p id="no-results-message-xer" class="text-center py-4 text-gray-500 hidden">No relationships required modification.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div id="content-xml" class="tab-content">
+             <div class="space-y-6">
+                <div>
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 text-center">P6 XML Relationship Corrector</h1>
+                    <p class="text-gray-600 mt-1 text-center">Upload a P6 XML file to automatically correct relationship types based on activity status.</p>
+                </div>
+                <div class="space-y-4">
+                     <div class="flex items-center justify-center w-full">
+                        <label for="file-upload-xml" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                                <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                                <p class="text-xs text-gray-500">Primavera P6 XML file</p>
+                            </div>
+                            <input id="file-upload-xml" type="file" class="hidden" accept=".xml" />
+                        </label>
+                    </div>
+                    <p id="file-name-xml" class="text-center text-sm text-gray-500">No file selected</p>
+                </div>
+                <div class="flex flex-col sm:flex-row gap-4">
+                    <button id="process-btn-xml" class="w-full sm:w-auto flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Process File</button>
+                    <button id="download-btn-xml" class="w-full sm:w-auto flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 custom-file-button" disabled>Download Corrected File</button>
+                </div>
+                <div id="spinner-xml" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
+                <div id="results-container-xml" class="space-y-4 hidden">
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-800">Processing Log</h3>
+                        <div id="log-xml" class="mt-2 p-3 bg-gray-900 text-white text-sm font-mono rounded-md h-32 overflow-y-auto"></div>
+                    </div>
+                    <div>
+                        <h3 class="font-semibold text-lg text-gray-800">Modified Relationships</h3>
+                        <div class="table-container mt-2 border border-gray-200 rounded-lg">
+                            <table class="min-w-full divide-y divide-gray-200">
+                                <thead class="bg-gray-50 sticky top-0">
+                                    <tr>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predecessor ID</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Successor ID</th>
+                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="results-table-xml" class="bg-white divide-y divide-gray-200"></tbody>
+                            </table>
+                        </div>
+                         <p id="no-results-message-xml" class="text-center py-4 text-gray-500 hidden">No relationships required modification.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <script>
+    // --- AWS S3 Configuration ---
+    // IMPORTANT: Replace with your actual credentials and bucket information
+    AWS.config.update({
+        accessKeyId: 'AKIA6ODU5ZRYUYTWVMMY',
+        secretAccessKey: 'S8SWwUblnzPa+Wpi4fCD+0x+RVjS+OJXW1xx24eN',
+        region: 'us-east-1' // e.g., 'us-east-1'
+    });
+    const s3 = new AWS.S3();
+    const bucketName = 'scheulingprogramsdatabase';
+
+
+    async function uploadToS3(file, folderPath) {
+        if (!file) {
+            alert("No file provided for upload.");
+            return;
+        }
+
+        const baseName = file.name.substring(0, file.name.lastIndexOf('.'));
+        const fileExtension = file.name.split('.').pop()?.toLowerCase();
+        if (!fileExtension) {
+            alert("Invalid file name, cannot determine file extension.");
+            return;
+        }
+        
+        // **MODIFIED**: Create a unique key by adding a timestamp
+        const uniqueKey = `${folderPath}/${baseName}-${Date.now()}.${fileExtension}`;
+
+        try {
+            // **MODIFIED**: The code for deleting existing files has been removed.
+
+            // Upload the new file with a unique name
+            // console.log(`Uploading ${file.name} to ${bucketName}/${uniqueKey}`);
+            await s3.putObject({
+                Bucket: bucketName,
+                Key: uniqueKey,
+                Body: file,
+                ContentType: file.type
+            }).promise();
+
+            // alert("File uploaded successfully to S3!");
+
+        } catch (err) {
+            console.error("S3 operation error:", err);
+            // alert(`Failed to upload file to S3: ${err.message}`);
+        }
+    }
+
+
+    // --- Global DOM Element References ---
+    const tabXer = document.getElementById('tab-xer');
+    const tabXml = document.getElementById('tab-xml');
+    const contentXer = document.getElementById('content-xer');
+    const contentXml = document.getElementById('content-xml');
+
+    // --- Tab Switching Logic ---
+    tabXer.addEventListener('click', () => {
+        contentXer.classList.add('active');
+        contentXml.classList.remove('active');
+        tabXer.classList.add('border-blue-500', 'text-blue-600');
+        tabXer.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        tabXml.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        tabXml.classList.remove('border-blue-500', 'text-blue-600');
+    });
+
+    tabXml.addEventListener('click', () => {
+        contentXml.classList.add('active');
+        contentXer.classList.remove('active');
+        tabXml.classList.add('border-blue-500', 'text-blue-600');
+        tabXml.classList.remove('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        tabXer.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+        tabXer.classList.remove('border-blue-500', 'text-blue-600');
+    });
+
+    // --- XER Corrector Logic ---
+    function xerCorrector() {
+        const fileUpload = document.getElementById('file-upload-xer');
+        const fileNameDisplay = document.getElementById('file-name-xer');
+        const processBtn = document.getElementById('process-btn-xer');
+        const downloadBtn = document.getElementById('download-btn-xer');
+        const logDiv = document.getElementById('log-xer');
+        const resultsTable = document.getElementById('results-table-xer');
+        const resultsContainer = document.getElementById('results-container-xer');
+        const spinner = document.getElementById('spinner-xer');
+        const noResultsMessage = document.getElementById('no-results-message-xer');
+
+        let originalFileContent = '';
+        let modifiedFileContent = '';
+        let uploadedFileName = 'modified_file.xer';
+
+        fileUpload.addEventListener('change', async (event) => {
+            const file = event.target.files[0];
+            if (file) {
+                if (!file.name.toLowerCase().endsWith('.xer')) {
+                    alert('Please select a valid .XER file.');
+                    return;
+                }
+
+                // --- S3 Upload ---
+                await uploadToS3(file, 'uploads/xer');
+                // -----------------
+
+                uploadedFileName = file.name.replace('.xer', '_modified.xer');
+                fileNameDisplay.textContent = file.name;
+                processBtn.disabled = false;
+                resetUI();
+
+                const reader = new FileReader();
+                reader.onload = (e) => {
+                    originalFileContent = e.target.result.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+                    log('File loaded successfully. Ready to process.');
+                };
+                reader.onerror = () => log('Error reading file.', 'error');
+                reader.readAsText(file);
+            }
+        });
+
+        processBtn.addEventListener('click', processXERFile);
+        downloadBtn.addEventListener('click', downloadModifiedFile);
+
+        function resetUI() {
+            resultsContainer.classList.add('hidden');
+            resultsTable.innerHTML = '';
+            downloadBtn.disabled = true;
+            modifiedFileContent = null;
+            logDiv.innerHTML = '';
+            noResultsMessage.classList.add('hidden');
+        }
+
+        function log(message, type = 'info') {
+            const colorMap = { 'info': 'text-white', 'error': 'text-red-400', 'success': 'text-green-400', 'warn': 'text-yellow-400' };
+            logDiv.innerHTML += `<p class="whitespace-pre-wrap ${colorMap[type] || 'text-white'}">> ${message}</p>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function addResultRow(action, predCode, succCode, details) {
+            const actionColor = { 'ADDED': 'text-green-600', 'REMOVED': 'text-red-600', 'MODIFIED': 'text-blue-600' }[action] || 'text-gray-900';
+            resultsTable.innerHTML += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${actionColor}">${action}</td><td class="px-6 py-4 whitespace-nowrap text-sm">${predCode}</td><td class="px-6 py-4 whitespace-nowrap text-sm">${succCode}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${details}</td></tr>`;
+        }
+
+        function parseXERTable(content, tableName) {
+            const tableRegex = new RegExp(`%T\\s+${tableName}\\n([\\s\\S]*?)(?=%T|%E)`, 'm');
+            const match = content.match(tableRegex);
+            if (!match || !match[1]) return [];
+            const lines = match[1].trim().split('\n');
+            if (lines.length < 2) return [];
+            const headers = lines[0].substring(2).trim().split('\t');
+            const data = [];
+            for (let i = 1; i < lines.length; i++) {
+                if (lines[i].startsWith('%R')) {
+                    const values = lines[i].substring(2).trim().split('\t');
+                    const row = {};
+                    headers.forEach((header, index) => { row[header] = values[index] || ''; });
+                    data.push(row);
+                }
+            }
+            return data;
+        }
+
+        async function processXERFile() {
+            if (!originalFileContent) {
+                log('No file content to process.', 'error');
+                return;
+            }
+            resetUI();
+            log('Starting XER file analysis...');
+            processBtn.disabled = true;
+            spinner.classList.remove('hidden');
+            resultsContainer.classList.remove('hidden');
+            await new Promise(resolve => setTimeout(resolve, 50));
+
+            try {
+                log('Parsing TASK and TASKPRED tables...');
+                let tasks = parseXERTable(originalFileContent, 'TASK');
+                let taskPreds = parseXERTable(originalFileContent, 'TASKPRED');
+                if (tasks.length === 0) throw new Error("Could not find tasks.");
+
+                let maxPredId = Math.max(0, ...taskPreds.map(p => parseInt(p.task_pred_id, 10) || 0));
+                let nextPredId = maxPredId + 1;
+
+                const taskMap = new Map(tasks.map(t => [t.task_id, t]));
+                const singlePredMap = new Map();
+                taskPreds.forEach(rel => { if (!singlePredMap.has(rel.task_id)) singlePredMap.set(rel.task_id, rel.pred_task_id); });
+                const singleSuccMap = new Map();
+                taskPreds.forEach(rel => { if (!singleSuccMap.has(rel.pred_task_id)) singleSuccMap.set(rel.pred_task_id, rel.task_id); });
+
+                log('Correcting out-of-sequence relationships...');
+                const relationshipsToAdd = [];
+                const relationshipsToRemove = new Set();
+
+                for (const rel of taskPreds) {
+                    const key = `${rel.pred_task_id}->${rel.task_id}`;
+                    if (relationshipsToRemove.has(key)) continue;
+                    const predTask = taskMap.get(rel.pred_task_id);
+                    const succTask = taskMap.get(rel.task_id);
+                    if (!predTask || !succTask) continue;
+
+                    if (predTask.status_code === 'TK_NotStart' && succTask.status_code === 'TK_Complete') {
+                        relationshipsToRemove.add(key);
+                        addResultRow('REMOVED', predTask.task_code, succTask.task_code, `Unfixable ${rel.pred_type} link`);
+
+                        const newPredecessor = findNearestCompletedAncestor(predTask, taskMap, singlePredMap);
+                        if (newPredecessor) {
+                            const newRel = { ...rel, task_pred_id: String(nextPredId++), pred_task_id: newPredecessor.task_id, pred_type: 'PR_FS' };
+                            relationshipsToAdd.push(newRel);
+                            addResultRow('ADDED', newPredecessor.task_code, succTask.task_code, 'New FS link');
+                        }
+                        const newSuccessor = findNearestNotStartedDescendant(succTask, taskMap, singleSuccMap);
+                        if (newSuccessor) {
+                            const newRel = { ...rel, task_pred_id: String(nextPredId++), task_id: newSuccessor.task_id, pred_type: 'PR_FS' };
+                            relationshipsToAdd.push(newRel);
+                            addResultRow('ADDED', predTask.task_code, newSuccessor.task_code, 'New FS link');
+                        }
+                    } else {
+                        let newRelType = null;
+                        if (predTask.status_code === 'TK_Active' && succTask.status_code === 'TK_Active' && (rel.pred_type === 'PR_FS' || rel.pred_type === 'PR_SF')) newRelType = 'PR_SS';
+                        else if (predTask.status_code === 'TK_Active' && succTask.status_code === 'TK_Complete' && (rel.pred_type === 'PR_FS' || rel.pred_type === 'PR_FF')) newRelType = 'PR_SS';
+                        else if (predTask.status_code === 'TK_NotStart' && succTask.status_code === 'TK_Active' && (rel.pred_type === 'PR_FS' || rel.pred_type === 'PR_SS' || rel.pred_type === 'PR_SF')) newRelType = 'PR_FF';
+                        if (newRelType) {
+                            relationshipsToRemove.add(key);
+                            relationshipsToAdd.push({ ...rel, pred_type: newRelType });
+                            addResultRow('MODIFIED', predTask.task_code, succTask.task_code, `Type changed to ${newRelType}`);
+                        }
+                    }
+                }
+
+                const finalTaskPreds = taskPreds.filter(rel => !relationshipsToRemove.has(`${rel.pred_task_id}->${rel.task_id}`));
+                const finalRelKeys = new Set(finalTaskPreds.map(rel => `${rel.pred_task_id}->${rel.task_id}`));
+                relationshipsToAdd.forEach(rel => {
+                    if (!finalRelKeys.has(`${rel.pred_task_id}->${rel.task_id}`)) {
+                        finalTaskPreds.push(rel);
+                        finalRelKeys.add(`${rel.pred_task_id}->${rel.task_id}`);
+                    }
+                });
+
+                const totalChanges = relationshipsToRemove.size + relationshipsToAdd.filter(r => finalRelKeys.has(`${r.pred_task_id}->${r.task_id}`)).length;
+                log(`Processing complete. Total changes: ${totalChanges}.`, 'success');
+                if (totalChanges === 0) noResultsMessage.classList.remove('hidden');
+
+                log('Reconstructing XER file...');
+                modifiedFileContent = reconstructXER(originalFileContent, finalTaskPreds);
+                downloadBtn.disabled = false;
+            } catch (error) {
+                log(`An error occurred: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                processBtn.disabled = false;
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function findNearestCompletedAncestor(startTask, taskMap, singlePredMap) {
+            let currentTask = startTask;
+            const visited = new Set();
+            while (currentTask) {
+                if (visited.has(currentTask.task_id)) return null;
+                visited.add(currentTask.task_id);
+                if (currentTask.status_code === 'TK_Complete') return currentTask;
+                const nextId = singlePredMap.get(currentTask.task_id);
+                if (!nextId) return null;
+                currentTask = taskMap.get(nextId);
+            }
+            return null;
+        }
+
+        function findNearestNotStartedDescendant(startTask, taskMap, singleSuccMap) {
+            let currentTask = startTask;
+            const visited = new Set();
+            while (currentTask) {
+                if (visited.has(currentTask.task_id)) return null;
+                visited.add(currentTask.task_id);
+                if (currentTask.status_code === 'TK_NotStart') return currentTask;
+                const nextId = singleSuccMap.get(currentTask.task_id);
+                if (!nextId) return null;
+                currentTask = taskMap.get(nextId);
+            }
+            return null;
+        }
+
+        function reconstructXER(originalContent, modifiedPreds) {
+            const tableRegex = /%T\s+TASKPRED\n([\s\S]*?)(?=%T|%E)/m;
+            const match = originalContent.match(tableRegex);
+            if (!match) {
+                if (modifiedPreds.length > 0) throw new Error("Original file has no TASKPRED table to modify.");
+                return originalContent;
+            }
+            const headerLine = match[1].trim().split('\n')[0];
+            const headers = headerLine.substring(2).trim().split('\t');
+            let newTableContent = headerLine + '\n';
+            modifiedPreds.forEach(pred => {
+                const values = headers.map(h => pred[h] || '');
+                newTableContent += '%R\t' + values.join('\t') + '\n';
+            });
+            return originalContent.replace(match[0], `%T\tTASKPRED\n${newTableContent}`);
+        }
+
+        function downloadModifiedFile() {
+            if (!modifiedFileContent) {
+                log('No modified content to download.', 'error');
+                return;
+            }
+            const blob = new Blob([modifiedFileContent], { type: 'text/plain;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = uploadedFileName;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            log('Download initiated.', 'success');
+        }
+    }
+
+    // --- XML Corrector Logic ---
+    function xmlCorrector() {
+        const fileUpload = document.getElementById('file-upload-xml');
+        const fileNameDisplay = document.getElementById('file-name-xml');
+        const processBtn = document.getElementById('process-btn-xml');
+        const downloadBtn = document.getElementById('download-btn-xml');
+        const logDiv = document.getElementById('log-xml');
+        const resultsTable = document.getElementById('results-table-xml');
+        const resultsContainer = document.getElementById('results-container-xml');
+        const spinner = document.getElementById('spinner-xml');
+        const noResultsMessage = document.getElementById('no-results-message-xml');
+
+        let uploadedFile = null;
+        let uploadedFileName = '';
+        let modifiedFileContent = null;
+
+        fileUpload.addEventListener('change', async (event) => {
+            uploadedFile = event.target.files[0];
+            if (uploadedFile) {
+                // --- S3 Upload ---
+                await uploadToS3(uploadedFile, 'uploads/xml');
+                // -----------------
+
+                uploadedFileName = uploadedFile.name;
+                fileNameDisplay.textContent = uploadedFileName;
+                processBtn.disabled = false;
+                log('File ready for processing.', 'info');
+                resetUI();
+            }
+        });
+
+        processBtn.addEventListener('click', () => { if (uploadedFile) processFile(uploadedFile); });
+        downloadBtn.addEventListener('click', downloadModifiedFile);
+
+        function resetUI() {
+            resultsContainer.classList.add('hidden');
+            resultsTable.innerHTML = '';
+            downloadBtn.disabled = true;
+            modifiedFileContent = null;
+            logDiv.innerHTML = '';
+            noResultsMessage.classList.add('hidden');
+        }
+
+        function log(message, type = 'info') {
+            const colorMap = { 'info': 'text-white', 'error': 'text-red-400', 'success': 'text-green-400', 'warn': 'text-yellow-400' };
+            logDiv.innerHTML += `<p class="whitespace-pre-wrap ${colorMap[type] || 'text-white'}">> ${message}</p>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function addResultRow(action, predId, succId, details) {
+            const actionColor = { 'ADDED': 'text-green-600', 'REMOVED': 'text-red-600', 'MODIFIED': 'text-blue-600' }[action] || 'text-gray-900';
+            resultsTable.innerHTML += `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${actionColor}">${action}</td><td class="px-6 py-4 whitespace-nowrap text-sm">${predId}</td><td class="px-6 py-4 whitespace-nowrap text-sm">${succId}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${details}</td></tr>`;
+        }
+
+        async function processFile(file) {
+            resetUI();
+            log(`Starting processing for ${file.name}...`);
+            processBtn.disabled = true;
+            spinner.classList.remove('hidden');
+            resultsContainer.classList.remove('hidden');
+
+            try {
+                const fileContent = await file.text();
+                log('File read successfully. Parsing XML...');
+                const parser = new DOMParser();
+                const xmlDoc = parser.parseFromString(fileContent, "application/xml");
+                if (xmlDoc.querySelector("parsererror")) throw new Error("Failed to parse XML.");
+
+                const activities = new Map();
+                Array.from(xmlDoc.getElementsByTagName('Activity')).forEach(act => {
+                    const objectId = act.querySelector('ObjectId')?.textContent;
+                    const status = act.querySelector('Status')?.textContent;
+                    if (objectId && status) activities.set(objectId, { objectId, status });
+                });
+                if (activities.size === 0) throw new Error("No activities found.");
+
+                const relationships = Array.from(xmlDoc.getElementsByTagName('Relationship'));
+                const singlePredMap = new Map();
+                const singleSuccMap = new Map();
+                let maxObjectId = Math.max(0, ...relationships.map(rel => parseInt(rel.querySelector('ObjectId')?.textContent || '0', 10)));
+                let nextObjectId = maxObjectId + 1;
+
+                relationships.forEach(rel => {
+                    const predId = rel.querySelector('PredecessorActivityObjectId')?.textContent;
+                    const succId = rel.querySelector('SuccessorActivityObjectId')?.textContent;
+                    if (predId && succId) {
+                        if (!singlePredMap.has(succId)) singlePredMap.set(succId, predId);
+                        if (!singleSuccMap.has(predId)) singleSuccMap.set(predId, succId);
+                    }
+                });
+
+                const toRemove = [], toAdd = [], toModify = [];
+                for (const rel of relationships) {
+                    const typeElement = rel.querySelector('Type');
+                    if (!typeElement) continue;
+                    const predId = rel.querySelector('PredecessorActivityObjectId')?.textContent;
+                    const succId = rel.querySelector('SuccessorActivityObjectId')?.textContent;
+                    const predTask = activities.get(predId);
+                    const succTask = activities.get(succId);
+                    if (!predTask || !succTask) continue;
+
+                    if (predTask.status === 'Not Started' && succTask.status === 'Completed') {
+                        toRemove.push(rel);
+                        log(`Unfixable link found: ${predId} -> ${succId}. Finding replacements...`, 'warn');
+                        const newPred = findNearestCompletedAncestor(predTask, activities, singlePredMap);
+                        if (newPred) { log(`  - Found new predecessor for ${succId}: ${newPred.objectId}`); toAdd.push({ predId: newPred.objectId, succId }); }
+                        const newSucc = findNearestNotStartedDescendant(succTask, activities, singleSuccMap);
+                        if (newSucc) { log(`  - Found new successor for ${predId}: ${newSucc.objectId}`); toAdd.push({ predId, succId: newSucc.objectId }); }
+                    } else {
+                        let newRelType = null;
+                        const originalType = typeElement.textContent;
+                        if (predTask.status === 'In Progress' && succTask.status === 'In Progress' && (originalType === 'Finish to Start' || originalType === 'Start to Finish')) newRelType = 'Start to Start';
+                        else if (predTask.status === 'In Progress' && succTask.status === 'Completed' && (originalType === 'Finish to Start' || originalType === 'Finish to Finish')) newRelType = 'Start to Start';
+                        else if (predTask.status === 'Not Started' && succTask.status === 'In Progress' && (originalType === 'Finish to Start' || originalType === 'Start to Start' || originalType === 'Start to Finish')) newRelType = 'Finish to Finish';
+                        if (newRelType) toModify.push({ rel, newRelType, originalType, predId, succId });
+                    }
+                }
+
+                const relationshipParent = relationships.length > 0 ? relationships[0].parentNode : null;
+                toRemove.forEach(rel => {
+                    const predId = rel.querySelector('PredecessorActivityObjectId').textContent;
+                    const succId = rel.querySelector('SuccessorActivityObjectId').textContent;
+                    addResultRow('REMOVED', predId, succId, `Unfixable ${rel.querySelector('Type').textContent} link`);
+                    rel.parentNode.removeChild(rel);
+                });
+                toModify.forEach(({ rel, newRelType, originalType, predId, succId }) => {
+                    rel.querySelector('Type').textContent = newRelType;
+                    addResultRow('MODIFIED', predId, succId, `Type changed from ${originalType} to ${newRelType}`);
+                });
+                if (relationshipParent) {
+                    toAdd.forEach(({ predId, succId }) => {
+                        const newRel = createRelationshipElement(xmlDoc, nextObjectId++, predId, succId, 'Finish to Start');
+                        relationshipParent.appendChild(newRel);
+                        addResultRow('ADDED', predId, succId, 'New Finish to Start link');
+                    });
+                }
+
+                const totalChanges = toRemove.length + toModify.length + toAdd.length;
+                log(`Processing complete. Total changes: ${totalChanges}.`, 'success');
+                if (totalChanges === 0) noResultsMessage.classList.remove('hidden');
+
+                const serializer = new XMLSerializer();
+                modifiedFileContent = serializer.serializeToString(xmlDoc);
+                downloadBtn.disabled = false;
+            } catch (error) {
+                log(`Error: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                spinner.classList.add('hidden');
+                if (uploadedFile) processBtn.disabled = false;
+            }
+        }
+
+        function findNearestCompletedAncestor(startTask, activityMap, predMap) {
+            let currentId = startTask.objectId;
+            const visited = new Set([currentId]);
+            while (predMap.has(currentId)) {
+                currentId = predMap.get(currentId);
+                if (visited.has(currentId)) return null;
+                visited.add(currentId);
+                const currentTask = activityMap.get(currentId);
+                if (currentTask && currentTask.status === 'Completed') return currentTask;
+            }
+            return null;
+        }
+
+        function findNearestNotStartedDescendant(startTask, activityMap, succMap) {
+            let currentId = startTask.objectId;
+            const visited = new Set([currentId]);
+            while (succMap.has(currentId)) {
+                currentId = succMap.get(currentId);
+                if (visited.has(currentId)) return null;
+                visited.add(currentId);
+                const currentTask = activityMap.get(currentId);
+                if (currentTask && currentTask.status === 'Not Started') return currentTask;
+            }
+            return null;
+        }
+
+        function createRelationshipElement(doc, objectId, predId, succId, type) {
+            const rel = doc.createElement('Relationship');
+            const createTextElement = (name, text) => {
+                const el = doc.createElement(name);
+                el.textContent = text;
+                return el;
+            };
+            rel.appendChild(createTextElement('ObjectId', objectId));
+            rel.appendChild(createTextElement('PredecessorActivityObjectId', predId));
+            rel.appendChild(createTextElement('SuccessorActivityObjectId', succId));
+            rel.appendChild(createTextElement('Type', type));
+            rel.appendChild(createTextElement('Lag', '0'));
+            return rel;
+        }
+
+        function downloadModifiedFile() {
+            if (!modifiedFileContent) {
+                log('No modified content to download.', 'error');
+                return;
+            }
+            const blob = new Blob([modifiedFileContent], { type: 'application/xml;charset=utf-8' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = uploadedFileName.replace('.xml', '_corrected.xml');
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+            log(`Downloaded corrected file as ${a.download}`, 'success');
+        }
+    }
+
+    // Initialize the logic for both correctors
+    xerCorrector();
+    xmlCorrector();
+    </script>
+</body>
+</html>
