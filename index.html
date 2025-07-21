@@ -3,30 +3,17 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P6 Relationship Corrector - Serverless Edition</title>
+    <title>P6 Relationship Corrector</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
+        body { font-family: 'Inter', sans-serif; }
         .tab-content { display: none; }
         .tab-content.active { display: block; }
         .tab-button { transition: all 0.3s ease; }
-        .spinner {
-            border-top-color: #3498db;
-            animation: spin 1s linear infinite;
-        }
-        @keyframes spin {
-            to { transform: rotate(360deg); }
-        }
         .custom-file-button:hover {
             transform: translateY(-2px);
             box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-        }
-        .table-container {
-            max-height: 40vh;
-            overflow-y: auto;
         }
     </style>
 </head>
@@ -45,263 +32,178 @@
             </nav>
         </div>
 
-        <!-- XER Corrector Tab -->
         <div id="content-xer" class="tab-content active">
             <div class="space-y-6">
                 <div class="text-center">
                     <h1 class="text-2xl md:text-3xl font-bold text-gray-900">P6 XER Relationship Corrector</h1>
-                    <p class="text-gray-600 mt-1">Upload your Primavera P6 XER file to automatically fix out-of-sequence logic.</p>
+                    <p class="text-gray-600 mt-1">Upload a P6 XER file to fix out-of-sequence logic.</p>
                 </div>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-center w-full">
-                        <label for="file-upload-xer" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
-                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                                <p class="text-xs text-gray-500">Primavera P6 XER file</p>
-                            </div>
-                            <input id="file-upload-xer" type="file" class="hidden" accept=".xer" />
-                        </label>
-                    </div>
-                    <p id="file-name-xer" class="text-center text-sm text-gray-500">No file selected</p>
+                <div>
+                    <label for="file-upload-xer" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                            <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-gray-500">Primavera P6 XER file</p>
+                        </div>
+                        <input id="file-upload-xer" type="file" class="hidden" accept=".xer" />
+                    </label>
+                    <p id="file-name-xer" class="text-center text-sm text-gray-500 mt-2">No file selected.</p>
                 </div>
-                <div class="flex">
-                    <button id="process-btn-xer" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Process and Download</button>
-                </div>
-                <div id="spinner-xer" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
-                <div id="results-container-xer" class="space-y-4 hidden">
-                    <div>
-                        <h3 class="font-semibold text-lg text-gray-800">Processing Log</h3>
-                        <div id="log-xer" class="mt-2 p-3 bg-gray-900 text-white text-sm font-mono rounded-md h-32 overflow-y-auto"></div>
-                    </div>
-                </div>
+                <button id="process-btn-xer" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Upload and Process File</button>
+                <div id="status-xer" class="text-center p-3 rounded-md text-sm"></div>
             </div>
         </div>
 
-        <!-- XML Corrector Tab -->
         <div id="content-xml" class="tab-content">
              <div class="space-y-6">
-                <div>
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900 text-center">P6 XML Relationship Corrector</h1>
-                    <p class="text-gray-600 mt-1 text-center">Upload a P6 XML file to automatically correct relationship types.</p>
+                <div class="text-center">
+                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">P6 XML Relationship Corrector</h1>
+                    <p class="text-gray-600 mt-1">Upload a P6 XML file to correct relationship types.</p>
                 </div>
-                <div class="space-y-4">
-                     <div class="flex items-center justify-center w-full">
-                        <label for="file-upload-xml" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                           <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
-                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                                <p class="text-xs text-gray-500">Primavera P6 XML file</p>
-                            </div>
-                            <input id="file-upload-xml" type="file" class="hidden" accept=".xml" />
-                        </label>
-                    </div>
-                    <p id="file-name-xml" class="text-center text-sm text-gray-500">No file selected</p>
+                 <div>
+                    <label for="file-upload-xml" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
+                        <div class="flex flex-col items-center justify-center pt-5 pb-6">
+                             <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
+                            <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
+                            <p class="text-xs text-gray-500">Primavera P6 XML file</p>
+                        </div>
+                        <input id="file-upload-xml" type="file" class="hidden" accept=".xml" />
+                    </label>
+                    <p id="file-name-xml" class="text-center text-sm text-gray-500 mt-2">No file selected.</p>
                 </div>
-                <div class="flex">
-                    <button id="process-btn-xml" class="w-full bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Process and Download</button>
-                </div>
-                <div id="spinner-xml" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
-                <div id="results-container-xml" class="space-y-4 hidden">
-                    <div>
-                        <h3 class="font-semibold text-lg text-gray-800">Processing Log</h3>
-                        <div id="log-xml" class="mt-2 p-3 bg-gray-900 text-white text-sm font-mono rounded-md h-32 overflow-y-auto"></div>
-                    </div>
-                </div>
+                <button id="process-btn-xml" class="w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Upload and Process File</button>
+                <div id="status-xml" class="text-center p-3 rounded-md text-sm"></div>
             </div>
         </div>
-
     </div>
 
     <script>
-    // --- Configuration ---
-    // IMPORTANT: Replace with your 3 actual API Gateway Invoke URLs
-    const GET_PRESIGNED_URL_API = 'https://r79d1bmd56.execute-api.us-east-1.amazonaws.com/';
-    const PROCESS_XER_API = 'https://933sqa6ew3.execute-api.us-east-1.amazonaws.com/';
-    const PROCESS_XML_API = 'https://k45k75ghga.execute-api.us-east-1.amazonaws.com/';
+        // --- Configuration ---
+        const xerApiEndpoint = 'https://elwixcxr22.execute-api.us-east-1.amazonaws.com/'; // <-- PASTE YOUR XER API ENDPOINT
+        const xmlApiEndpoint = 'https://jjf0bxpwq7.execute-api.us-east-1.amazonaws.com/'; // <-- PASTE YOUR XML API ENDPOINT
 
+        // --- Global State ---
+        let xerFile = null;
+        let xmlFile = null;
 
-    // --- Global State ---
-    let uploadedFileKey = null;
-    let originalFileName = null;
+        // --- DOM Elements ---
+        const tabXer = document.getElementById('tab-xer');
+        const tabXml = document.getElementById('tab-xml');
+        const contentXer = document.getElementById('content-xer');
+        const contentXml = document.getElementById('content-xml');
 
-    // --- Tab Switching Logic ---
-    const tabXer = document.getElementById('tab-xer');
-    const tabXml = document.getElementById('tab-xml');
-    const contentXer = document.getElementById('content-xer');
-    const contentXml = document.getElementById('content-xml');
+        // --- Tab Switching Logic ---
+        function switchTab(activeTab, inactiveTab, activeContent, inactiveContent) {
+            activeTab.classList.add('border-blue-500', 'text-blue-600');
+            activeTab.classList.remove('border-transparent', 'text-gray-500');
+            inactiveTab.classList.add('border-transparent', 'text-gray-500');
+            inactiveTab.classList.remove('border-blue-500', 'text-blue-600');
+            activeContent.classList.add('active');
+            inactiveContent.classList.remove('active');
+        }
+        tabXer.addEventListener('click', () => switchTab(tabXer, tabXml, contentXer, contentXml));
+        tabXml.addEventListener('click', () => switchTab(tabXml, tabXer, contentXml, contentXer));
+        
+        // --- Helper to display status messages ---
+        function setStatus(elementId, message, isError = false) {
+            const statusEl = document.getElementById(elementId);
+            statusEl.textContent = message;
+            statusEl.className = `text-center p-3 rounded-md text-sm ${isError ? 'bg-red-100 text-red-700' : 'bg-green-100 text-green-700'}`;
+            statusEl.style.display = 'block';
+        }
 
-    tabXer.addEventListener('click', () => {
-        contentXer.classList.add('active');
-        contentXml.classList.remove('active');
-        tabXer.classList.add('border-blue-500', 'text-blue-600');
-        tabXer.classList.remove('border-transparent', 'text-gray-500');
-        tabXml.classList.add('border-transparent', 'text-gray-500');
-        tabXml.classList.remove('border-blue-500', 'text-blue-600');
-    });
-
-    tabXml.addEventListener('click', () => {
-        contentXml.classList.add('active');
-        contentXer.classList.remove('active');
-        tabXml.classList.add('border-blue-500', 'text-blue-600');
-        tabXml.classList.remove('border-transparent', 'text-gray-500');
-        tabXer.classList.add('border-transparent', 'text-gray-500');
-        tabXer.classList.remove('border-blue-500', 'text-blue-600');
-    });
-
-    // --- Generic UI and API Logic ---
-    function getUiElements(type) {
-        return {
-            fileUpload: document.getElementById(`file-upload-${type}`),
-            fileNameDisplay: document.getElementById(`file-name-${type}`),
-            processBtn: document.getElementById(`process-btn-${type}`),
-            logDiv: document.getElementById(`log-${type}`),
-            spinner: document.getElementById(`spinner-${type}`),
-            resultsContainer: document.getElementById(`results-container-${type}`),
-        };
-    }
-
-    function log(ui, message, type = 'info') {
-        const colorMap = { 'info': 'text-white', 'error': 'text-red-400', 'success': 'text-green-400' };
-        ui.logDiv.innerHTML += `<p class="whitespace-pre-wrap ${colorMap[type] || 'text-white'}">> ${message}</p>`;
-        ui.logDiv.scrollTop = ui.logDiv.scrollHeight;
-    }
-
-    function resetUI(ui) {
-        ui.resultsContainer.classList.add('hidden');
-        ui.logDiv.innerHTML = '';
-        uploadedFileKey = null;
-        originalFileName = null;
-    }
-
-    function downloadFile(content, fileName, mimeType) {
-        const blob = new Blob([content], { type: mimeType });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = fileName;
-        document.body.appendChild(a);
-        a.click();
-        document.body.removeChild(a);
-        URL.revokeObjectURL(url);
-    }
-
-    // --- Main Application Logic ---
-    function setupCorrector(type) {
-        const ui = getUiElements(type);
-        // Determine which processing URL to use based on the file type
-        const processApiUrl = type === 'xer' ? PROCESS_XER_API : PROCESS_XML_API;
-
-        // 1. File Selection
-        ui.fileUpload.addEventListener('change', async (event) => {
-            const file = event.target.files[0];
-            if (!file) return;
-
-            if (!file.name.toLowerCase().endsWith(`.${type}`)) {
-                alert(`Please select a valid .${type.toUpperCase()} file.`);
+        // --- Core Upload Logic ---
+        async function uploadFile(file, fileType, statusElId, btnElId, apiEndpoint) {
+            if (!file) {
+                setStatus(statusElId, 'No file selected.', true);
+                return;
+            }
+            if (!apiEndpoint || !apiEndpoint.startsWith('https')) {
+                setStatus(statusElId, 'API endpoint is not configured correctly. Please check the script.', true);
                 return;
             }
 
-            resetUI(ui);
-            originalFileName = file.name;
-            ui.fileNameDisplay.textContent = file.name;
-            log(ui, `Selected file: ${file.name}`);
-            ui.spinner.classList.remove('hidden');
-            ui.processBtn.disabled = true;
+            const processBtn = document.getElementById(btnElId);
+            processBtn.disabled = true;
+            setStatus(statusElId, 'Requesting upload link...', false);
 
             try {
-                // 2. Get a pre-signed URL for upload
-                log(ui, 'Requesting upload URL...');
-                // Use the specific URL for getting the presigned URL
-                const presignResponse = await fetch(GET_PRESIGNED_URL_API, {
+                // 1. Get pre-signed URL from the correct API Gateway endpoint
+                const response = await fetch(apiEndpoint, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         fileName: file.name,
-                        fileType: file.type,
-                        folder: type
-                    }),
+                        fileType: fileType // Keep sending fileType, it's good practice
+                    })
                 });
 
-                if (!presignResponse.ok) throw new Error('Failed to get pre-signed URL.');
+                if (!response.ok) {
+                    const errorData = await response.json();
+                    throw new Error(errorData.error || `Failed to get upload URL. Status: ${response.status}`);
+                }
+                
+                const { uploadURL } = await response.json();
+                setStatus(statusElId, 'Uploading file...', false);
 
-                const { uploadURL, key } = await presignResponse.json();
-                uploadedFileKey = key;
-                log(ui, 'Obtained upload URL. Uploading to S3...');
-
-                // 3. Upload file directly to S3
-                await fetch(uploadURL, {
+                // 2. Upload the file directly to S3 using the pre-signed URL
+                const uploadResponse = await fetch(uploadURL, {
                     method: 'PUT',
-                    body: file,
-                    headers: { 'Content-Type': file.type }
+                    body: file
                 });
 
-                log(ui, 'File uploaded successfully!', 'success');
-                ui.processBtn.disabled = false;
-
-            } catch (error) {
-                console.error('Upload Error:', error);
-                log(ui, `Upload failed: ${error.message}`, 'error');
-            } finally {
-                ui.spinner.classList.add('hidden');
-            }
-        });
-
-        // 4. Process File
-        ui.processBtn.addEventListener('click', async () => {
-            if (!uploadedFileKey) {
-                log(ui, 'No file has been uploaded.', 'error');
-                return;
-            }
-
-            ui.spinner.classList.remove('hidden');
-            ui.processBtn.disabled = true;
-            ui.resultsContainer.classList.remove('hidden');
-            log(ui, 'Sending file for processing...');
-
-            try {
-                // 5. Trigger the correct processing Lambda
-                const processResponse = await fetch(processApiUrl, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        sourceKey: uploadedFileKey
-                    }),
-                });
-
-                if (!processResponse.ok) {
-                    const errorData = await processResponse.json();
-                    throw new Error(errorData.message || 'Processing failed on the server.');
+                if (!uploadResponse.ok) {
+                    throw new Error('File upload to S3 failed.');
                 }
 
-                const result = await processResponse.json();
-                log(ui, 'Processing complete!', 'success');
-                log(ui, result.log);
+                setStatus(statusElId, '✅ Upload complete! Your file is now being processed on the server. The corrected version will be in the "processed" folder in S3.', false);
 
-                // 6. Automatically download the corrected file
-                if (result.fileContent) {
-                    const correctedFileName = originalFileName.replace(`.${type}`, `_corrected.${type}`);
-                    const mimeType = type === 'xml' ? 'application/xml' : 'text/plain';
-                    downloadFile(result.fileContent, correctedFileName, mimeType);
-                    log(ui, `Download initiated for ${correctedFileName}`, 'success');
+            } catch (error) {
+                console.error('Upload process failed:', error);
+                setStatus(statusElId, `Error: ${error.message}`, true);
+                processBtn.disabled = false; // Re-enable button on failure
+            }
+        }
+
+        // --- Event Listener Setup ---
+        function setupUploader(fileInputId, fileNameId, processBtnId, statusId, fileType, apiEndpoint) {
+            const fileInput = document.getElementById(fileInputId);
+            const fileNameEl = document.getElementById(fileNameId);
+            const processBtn = document.getElementById(processBtnId);
+
+            fileInput.addEventListener('change', (event) => {
+                const file = event.target.files[0];
+                const statusEl = document.getElementById(statusId);
+                
+                if (file) {
+                    fileNameEl.textContent = `Selected: ${file.name}`;
+                    processBtn.disabled = false;
+                    statusEl.style.display = 'none'; // Hide previous status messages
+                    if (fileType === 'xer') {
+                        xerFile = file;
+                    } else {
+                        xmlFile = file;
+                    }
                 } else {
-                    throw new Error("No file content received from server.");
+                    fileNameEl.textContent = 'No file selected.';
+                    processBtn.disabled = true;
+                    if (fileType === 'xer') {
+                        xerFile = null;
+                    } else {
+                        xmlFile = null;
+                    }
                 }
+            });
 
-            } catch (error) {
-                console.error('Processing Error:', error);
-                log(ui, `Processing failed: ${error.message}`, 'error');
-            } finally {
-                ui.spinner.classList.add('hidden');
-                ui.processBtn.disabled = false;
-            }
-        });
-    }
+            processBtn.addEventListener('click', () => {
+                const fileToUpload = (fileType === 'xer') ? xerFile : xmlFile;
+                uploadFile(fileToUpload, fileType, statusId, processBtnId, apiEndpoint);
+            });
+        }
 
-    // Initialize both correctors
-    setupCorrector('xer');
-    setupCorrector('xml');
-
+        // Initialize both uploaders with their respective API endpoints
+        setupUploader('file-upload-xer', 'file-name-xer', 'process-btn-xer', 'status-xer', 'xer', xerApiEndpoint);
+        setupUploader('file-upload-xml', 'file-name-xml', 'process-btn-xml', 'status-xml', 'xml', xmlApiEndpoint);
     </script>
 </body>
 </html>
