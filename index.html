@@ -248,7 +248,7 @@
         processBtn.addEventListener('click', async () => {
             if (!selectedFile) return;
             resetUI();
-            log('Requesting secure upload link...');
+            // log('Requesting secure upload link...');
             processBtn.disabled = true;
             spinner.classList.remove('hidden');
             resultsContainer.classList.remove('hidden');
@@ -270,7 +270,7 @@
                 }
                 const { uploadUrl, s3Key } = await getUrlResponse.json();
                 
-                log('Secure link received. Uploading file directly...', 'success');
+                // log('Secure link received. Uploading file directly...', 'success');
 
                 // --- STEP 2: Upload the file directly to S3 with progress (0% -> 50%) ---
                 await uploadFileWithProgress(uploadUrl, selectedFile, (percent) => {
