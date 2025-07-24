@@ -166,7 +166,7 @@
 
 <script>
     // --- IMPORTANT: Use the API Gateway endpoint for your Lambda function ---
-    const API_ENDPOINT = 'YOUR_API_GATEWAY_ENDPOINT_URL'; 
+    const API_ENDPOINT = 'https://qi698s922h.execute-api.us-east-1.amazonaws.com/default/p6Corrector-v3'; 
 
     const tabXer = document.getElementById('tab-xer');
     const tabXml = document.getElementById('tab-xml');
@@ -227,6 +227,20 @@
             progressContainer.classList.remove('hidden');
 
             try {
+                // --- MODIFICATION START: Improved Error Handling ---
+                // Helper function to handle fetch errors gracefully
+                const handleFetchError = async (response) => {
+                    const contentType = response.headers.get("content-type");
+                    if (contentType && contentType.indexOf("application/json") !== -1) {
+                        const err = await response.json();
+                        throw new Error(err.message || `Server error: ${response.status}`);
+                    } else {
+                        const textError = await response.text();
+                        throw new Error(`Server error: ${response.status} - ${textError}`);
+                    }
+                };
+                // --- MODIFICATION END ---
+
                 // --- STEP 1: Get a presigned URL from Lambda ---
                 const getUrlResponse = await fetch(API_ENDPOINT, {
                     method: 'POST',
@@ -237,8 +251,7 @@
                     }),
                 });
                 if (!getUrlResponse.ok) {
-                    const err = await getUrlResponse.json();
-                    throw new Error(err.message || 'Could not get an upload URL.');
+                    await handleFetchError(getUrlResponse);
                 }
                 const { uploadUrl, s3Key } = await getUrlResponse.json();
                 
@@ -290,8 +303,7 @@
                     }),
                 });
                 if (!processResponse.ok) {
-                    const err = await processResponse.json();
-                    throw new Error(err.message || 'Processing request failed.');
+                    await handleFetchError(processResponse);
                 }
                 
                 const result = await processResponse.json();
