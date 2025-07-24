@@ -6,8 +6,8 @@
     <title>P6 Relationship Corrector</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
-    <!-- NEW: AWS SDK for S3 v3 - for high-speed multipart uploads -->
-    <script src="https://sdk.amazonaws.com/v3/release/aws-sdk.js"></script>
+    <!-- MODIFIED: AWS SDK for S3 v2 - This version is compatible with the upload code -->
+    <script src="https://sdk.amazonaws.com/js/aws-sdk-2.1093.0.min.js"></script>
     <style>
         body {
             font-family: 'Inter', sans-serif;
@@ -227,8 +227,6 @@
             progressContainer.classList.remove('hidden');
 
             try {
-                // --- MODIFICATION START: Improved Error Handling ---
-                // Helper function to handle fetch errors gracefully
                 const handleFetchError = async (response) => {
                     const contentType = response.headers.get("content-type");
                     if (contentType && contentType.indexOf("application/json") !== -1) {
@@ -239,9 +237,7 @@
                         throw new Error(`Server error: ${response.status} - ${textError}`);
                     }
                 };
-                // --- MODIFICATION END ---
 
-                // --- STEP 1: Get a presigned URL from Lambda ---
                 const getUrlResponse = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -257,32 +253,41 @@
                 
                 log('Secure link received. Uploading file directly to S3...', 'success');
 
-                // --- STEP 2: Upload the file directly to S3 with the high-speed uploader ---
-                const { Upload } = AWS.S3.Upload;
-                const s3 = new AWS.S3.S3Client({ region: "us-east-1", credentials: { accessKeyId: "dummy", secretAccessKey: "dummy" } }); // Credentials are not needed for presigned URL
-                
-                const parallelUploads3 = new Upload({
-                    client: s3,
+                // --- MODIFIED: Use AWS SDK v2 for high-speed multipart upload ---
+                AWS.config.update({ region: 'us-east-1', credentials: new AWS.AnonymousCredentials() });
+                const s3 = new AWS.S3();
+                const upload = new AWS.S3.ManagedUpload({
                     params: {
-                        Bucket: 'scheulingprogramsdatabase', // This is just a placeholder, the URL contains the real one
+                        Bucket: 'scheulingprogramsdatabase', // Must match your bucket
                         Key: s3Key,
                         Body: selectedFile,
+                        ContentType: selectedFile.type,
                     },
-                    queueSize: 4, // Upload 4 parts at a time
-                    partSize: 1024 * 1024 * 5, // 5 MB parts
+                    service: s3,
+                    // This is a trick to use the presigned URL instead of credentials
+                    serviceConfiguration: {
+                        endpoint: uploadUrl.split('?')[0],
+                        signatureVersion: 'v4',
+                        s3ForcePathStyle: true,
+                        // The presigned URL parameters are appended here
+                        httpOptions: {
+                            search: '?' + uploadUrl.split('?')[1]
+                        }
+                    }
                 });
 
-                parallelUploads3.on("httpUploadProgress", (progress) => {
+                upload.on('httpUploadProgress', (progress) => {
                     const percent = Math.round((progress.loaded / progress.total) * 100);
                     progressBar.style.width = (percent / 2) + '%'; // Scale progress to 0-50 range
                 });
 
-                await parallelUploads3.done();
+                await upload.promise();
+                // --- END MODIFICATION ---
+
                 log('File uploaded successfully! Now processing...', 'success');
                 progressBar.style.width = '50%';
 
 
-                // --- STEP 2.5: Simulate processing progress (50% -> 95%) ---
                 let currentProgress = 50;
                 processingInterval = setInterval(() => {
                     currentProgress += 1;
@@ -293,7 +298,6 @@
                     }
                 }, 200);
 
-                // --- STEP 3: Tell Lambda to process the file from S3 ---
                 const processResponse = await fetch(API_ENDPOINT, {
                     method: 'POST',
                     body: JSON.stringify({
@@ -308,7 +312,6 @@
                 
                 const result = await processResponse.json();
                 
-                // --- STEP 4: Display the results ---
                 clearInterval(processingInterval);
                 progressBar.style.width = '100%';
 
