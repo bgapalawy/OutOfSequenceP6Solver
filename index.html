@@ -3,382 +3,391 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>P6 Relationship Corrector </title>
+    <title>Mostafa Elgabalawy</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         body {
-            font-family: 'Inter', sans-serif;
+            font-family: 'Poppins', sans-serif;
         }
-        .tab-content {
-            display: none;
+        /* Custom styles for main content transitions */
+        .tool-content.hidden { display: none; }
+        
+        /* Custom styles for sidebar */
+        .sidebar-link.active {
+            background-color: #4f46e5; /* indigo-600 */
+            color: #ffffff; /* white */
+            font-weight: 600;
         }
-        .tab-content.active {
-            display: block;
+        .sidebar-link:not(.active):hover {
+            background-color: #f3f4f6; /* gray-100 */
         }
-        .tab-button {
+
+        /* Styles from previous version needed for cards */
+        .tool-card {
+            background: rgba(255, 255, 255, 1);
+            border-radius: 20px;
+            box-shadow: 0 8px 32px 0 rgba(100, 116, 139, 0.12);
+        }
+        .btn-animated {
+            transition: all 0.2s ease-in-out;
+        }
+        .btn-animated:hover {
+            transform: translateY(-2px) scale(1.02);
+            filter: brightness(1.1);
+        }
+        .file-drop-zone {
             transition: all 0.3s ease;
+            border-style: dashed;
+        }
+        .file-drop-zone.dragover {
+            border-color: #3b82f6;
+            background-color: rgba(59, 130, 246, 0.1);
         }
         .spinner {
-            border-top-color: #3498db;
+            border-top-color: #3b82f6;
             animation: spin 1s linear infinite;
         }
         @keyframes spin {
             to { transform: rotate(360deg); }
         }
-        .custom-file-button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        .results-container {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: opacity 0.5s ease, transform 0.5s ease;
+        }
+        .results-container.visible {
+            opacity: 1;
+            transform: translateY(0);
         }
         .table-container {
             max-height: 40vh;
             overflow-y: auto;
         }
+        .sticky-header th {
+            position: sticky;
+            top: 0;
+            background: rgba(249, 250, 251, 1);
+        }
+        .sub-tab-content.hidden { display: none; }
     </style>
 </head>
-<body class="bg-gray-100 text-gray-800 flex items-center justify-center min-h-screen p-4">
+<body class="bg-gray-50">
 
-    <div class="w-full max-w-5xl bg-white rounded-2xl shadow-xl p-8 space-y-8">
-
-        <div class="border-b border-gray-200">
-            <nav class="-mb-px flex space-x-8" aria-label="Tabs">
-                <button id="tab-xer" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-blue-500 text-blue-600">
-                    XER Corrector
+    <div class="flex h-screen">
+        <aside class="w-64 flex-shrink-0 bg-white border-r border-gray-200 flex flex-col">
+            <div class="p-4">
+                <h1 class="text-2xl font-bold text-gray-800">P6 Tools Suite Advanced</h1>
+            </div>
+            <nav class="mt-6 px-2 flex-grow">
+                <button id="nav-updater" class="sidebar-link active w-full flex items-center px-4 py-2.5 text-gray-700 rounded-lg transition-colors duration-200">
+                    <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.42 15.17L17.25 21A2.652 2.652 0 0021 17.25l-5.877-5.877M11.42 15.17l2.472-2.472a3.375 3.375 0 00-4.773-4.773L6.75 15.75l2.472 2.472a3.375 3.375 0 004.773-4.773z" />
+                    </svg>
+                    <strong> 1 </strong> <br> Actual & Planned
                 </button>
-                <button id="tab-xml" class="tab-button whitespace-nowrap py-4 px-1 border-b-2 font-medium text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">
-                    XML Corrector
+                <button id="nav-corrector" class="sidebar-link w-full flex items-center px-4 py-2.5 text-gray-700 rounded-lg mt-1 transition-colors duration-200">
+                     <svg class="w-5 h-5 mr-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M13.19 8.688a4.5 4.5 0 011.242 7.244l-4.5 4.5a4.5 4.5 0 01-6.364-6.364l1.757-1.757m13.35-.622l1.757-1.757a4.5 4.5 0 00-6.364-6.364l-4.5 4.5a4.5 4.5 0 001.242 7.244" />
+                    </svg>
+                    <strong> 2 </strong> <br>Out of Sequence Corrector
                 </button>
             </nav>
-        </div>
-
-        <!-- XER Tab -->
-        <div id="content-xer" class="tab-content active">
-            <div class="space-y-6">
-                <div class="text-center">
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">P6 XER Relationship Corrector</h1>
-                    <p class="text-gray-600 mt-1">Upload your Primavera P6 XER file to automatically fix out-of-sequence logic.</p>
+            <div class="p-4 border-t border-gray-200">
+                <h3 class="text-lg font-semibold text-gray-800 mb-2">Contacts</h3>
+                <p class="text-sm text-gray-600 mb-2">For inquiries, please contact me after <strong>4 PM.</strong> </p>
+                <div class="flex items-center text-sm text-gray-700 mb-2">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M17.25 3.111a2.063 2.063 0 00-2.921-.001L3.11 14.33a2.063 2.063 0 00-.001 2.921l.004.004a.75.75 0 001.06 0l11.026-11.026a.75.75 0 000-1.06l-.004-.004zM10 1.5a8.5 8.5 0 100 17 8.5 8.5 0 000-17zM2.5 10a7.5 7.5 0 1115 0 7.5 7.5 0 01-15 0z"></path></svg>
+                    <span>+966581854860</span>
                 </div>
-                <div class="space-y-4">
-                    <div class="flex items-center justify-center w-full">
-                        <label for="file-upload-xer" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
-                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                                <p class="text-xs text-gray-500">Primavera P6 XER file</p>
-                            </div>
-                            <input id="file-upload-xer" type="file" class="hidden" accept=".xer" />
-                        </label>
-                    </div>
-                    <p id="file-name-xer" class="text-center text-sm text-gray-500">No file selected</p>
-                     <!-- Progress Bar -->
-                    <div id="progress-container-xer" class="w-full bg-gray-200 rounded-full h-2.5 hidden">
-                        <div id="progress-bar-xer" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%"></div>
-                    </div>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button id="process-btn-xer" class="w-full sm:w-auto flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Process File</button>
-                    <button id="download-btn-xer" class="w-full sm:w-auto flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 custom-file-button" disabled>Download Corrected File</button>
-                </div>
-                <div id="spinner-xer" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
-                <div id="results-container-xer" class="space-y-4 hidden">
-                    <div>
-                        <h3 class="font-semibold text-lg text-gray-800">Processing Log</h3>
-                        <div id="log-xer" class="mt-2 p-3 bg-gray-900 text-white text-sm font-mono rounded-md h-32 overflow-y-auto"></div>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-lg text-gray-800">Modified Relationships</h3>
-                        <div class="table-container mt-2 border border-gray-200 rounded-lg">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50 sticky top-0">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predecessor ID</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Successor ID</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="results-table-xer" class="bg-white divide-y divide-gray-200"></tbody>
-                            </table>
-                        </div>
-                         <p id="no-results-message-xer" class="text-center py-4 text-gray-500 hidden">No relationships required modification.</p>
-                    </div>
+                <h3 class="text-lg font-semibold text-gray-800 mt-4 mb-2">Urgent Contacts</h4>
+                <p class="text-sm text-gray-600 mb-2"> <h2><strong>For large files or urgent matters</strong></h2> , please email:</p>
+                <div class="flex items-center text-sm text-gray-700">
+                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M2.003 5.884L10 9.882l7.997-3.998A2 2 0 0016 4H4a2 2 0 00-1.997 1.884zM18 8.118l-8 4-8-4V14a2 2 0 002 2h12a2 2 0 002-2V8.118z"></path></svg>
+                    <a href="mailto:bgapalawy@gmail.com" class="hover:underline">mostafa.elgabalawy@outlook.com</a>
                 </div>
             </div>
-        </div>
-        <!-- XML Tab -->
-        <div id="content-xml" class="tab-content">
-             <div class="space-y-6">
-                <div class="text-center">
-                    <h1 class="text-2xl md:text-3xl font-bold text-gray-900">P6 XML Relationship Corrector</h1>
-                    <p class="text-gray-600 mt-1">Upload a P6 XML file to automatically correct relationship types based on activity status.</p>
-                    <p class="text-gray-600 mt-1"><b>notice :</b>xml prefered in non English languages and Results Files Works well on P6 (24) Edition.</p>
+        </aside>
 
-                </div>
-                <div class="space-y-4">
-                     <div class="flex items-center justify-center w-full">
-                        <label for="file-upload-xml" class="flex flex-col items-center justify-center w-full h-32 border-2 border-gray-300 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100">
-                            <div class="flex flex-col items-center justify-center pt-5 pb-6">
-                                <svg class="w-8 h-8 mb-4 text-gray-500" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 20 16"><path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 13h3a3 3 0 0 0 0-6h-.025A5.56 5.56 0 0 0 16 6.5 5.5 5.5 0 0 0 5.207 5.021C5.137 5.017 5.071 5 5 5a4 4 0 0 0 0 8h2.167M10 15V6m0 0L8 8m2-2 2 2"/></svg>
-                                <p class="mb-2 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag and drop</p>
-                                <p class="text-xs text-gray-500">Primavera P6 XML file</p>
-                            </div>
-                            <input id="file-upload-xml" type="file" class="hidden" accept=".xml" />
-                        </label>
+        <main class="flex-1 overflow-y-auto p-8">
+            <div id="content-updater" class="tool-content">
+                <section class="tool-card p-6 md:p-8">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800">PVA  (Planned Value = Actual Value)</h2>
+                        <p class="text-gray-600 mt-1">First step in Revised and Recovery Plans <br>(Split 'In-Progress' activities & make planned = Actual until Data Date)
+                        <br><strong>Notice :</strong> English Schedule works well in xer non English will add soon </p>
                     </div>
-                    <p id="file-name-xml" class="text-center text-sm text-gray-500">No file selected</p>
-                    <!-- Progress Bar -->
-                    <div id="progress-container-xml" class="w-full bg-gray-200 rounded-full h-2.5 hidden">
-                        <div id="progress-bar-xml" class="bg-blue-600 h-2.5 rounded-full transition-all duration-300 ease-in-out" style="width: 0%"></div>
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-6"><button id="sub-tab-upd-xer" class="tab-button whitespace-nowrap pb-4 px-1 border-b-2 font-semibold text-lg border-blue-500 text-blue-600">XER</button><button id="sub-tab-upd-xml" class="tab-button whitespace-nowrap pb-4 px-1 border-b-2 font-semibold text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300 relative">XML <span class="absolute top-0 right-0 -mt-2 -mr-4 bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">SOON</span></button></nav>
                     </div>
-                </div>
-                <div class="flex flex-col sm:flex-row gap-4">
-                    <button id="process-btn-xml" class="w-full sm:w-auto flex-1 bg-blue-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-blue-700 disabled:bg-gray-400 custom-file-button" disabled>Process File</button>
-                    <button id="download-btn-xml" class="w-full sm:w-auto flex-1 bg-green-600 text-white font-bold py-2 px-4 rounded-lg hover:bg-green-700 disabled:bg-gray-400 custom-file-button" disabled>Download Corrected File</button>
-                </div>
-                <div id="spinner-xml" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
-                <div id="results-container-xml" class="space-y-4 hidden">
-                    <div>
-                        <h3 class="font-semibold text-lg text-gray-800">Processing Log</h3>
-                        <div id="log-xml" class="mt-2 p-3 bg-gray-900 text-white text-sm font-mono rounded-md h-32 overflow-y-auto"></div>
-                    </div>
-                    <div>
-                        <h3 class="font-semibold text-lg text-gray-800">Modified Relationships</h3>
-                        <div class="table-container mt-2 border border-gray-200 rounded-lg">
-                            <table class="min-w-full divide-y divide-gray-200">
-                                <thead class="bg-gray-50 sticky top-0">
-                                    <tr>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predecessor ID</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Successor ID</th>
-                                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th>
-                                    </tr>
-                                </thead>
-                                <tbody id="results-table-xml" class="bg-white divide-y divide-gray-200"></tbody>
-                            </table>
+                    <div id="sub-content-upd-xer" class="sub-tab-content">
+                        <div class="space-y-6"><div id="drop-zone-upd-xer" class="file-drop-zone flex items-center justify-center w-full h-32 border-2 border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"><label for="file-upload-upd-xer" class="flex flex-col items-center justify-center w-full h-full"><svg class="w-8 h-8 mb-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg><p class="mb-1 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag & drop</p><p id="file-name-upd-xer" class="text-xs text-gray-500">No XER file selected</p><input id="file-upload-upd-xer" type="file" class="hidden" accept=".xer"></label></div><div class="flex gap-4"><button id="process-btn-upd-xer" class="btn-animated w-full bg-blue-600 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-400" disabled>Process File</button><button id="download-btn-upd-xer" class="btn-animated w-full bg-indigo-600 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-400" disabled>Download File</button></div>
+                        <div id="spinner-upd-xer" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
+                        <div id="progress-container-upd-xer" class="hidden w-full bg-gray-200 rounded-full mt-4">
+                            <div id="progress-bar-upd-xer" class="bg-blue-600 text-xs font-medium text-blue-100 text-center p-0.5 leading-none rounded-full transition-all duration-300 ease-in-out" style="width: 0%">0%</div>
                         </div>
-                         <p id="no-results-message-xml" class="text-center py-4 text-gray-500 hidden">No relationships required modification.</p>
+                        <div id="results-container-upd-xer" class="results-container space-y-4"><h3 class="font-semibold text-lg text-gray-800">Processing Log & Summary</h3><div id="log-upd-xer" class="p-3 bg-gray-900 text-white text-xs font-mono rounded-md h-24 overflow-y-auto"></div><div class="table-container border border-gray-200 rounded-lg"><table class="min-w-full divide-y divide-gray-200"><thead class="sticky-header"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Activity ID</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th></tr></thead><tbody id="results-table-upd-xer" class="bg-white divide-y divide-gray-200"></tbody></table></div></div></div>
                     </div>
-                </div>
+                    <div id="sub-content-upd-xml" class="sub-tab-content hidden flex flex-col items-center justify-center text-center h-full min-h-[300px]"><svg class="mx-auto h-16 w-16 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg><h3 class="mt-4 text-xl font-semibold text-gray-900">Functionality Coming Soon!</h3><p class="mt-1 text-sm text-gray-500">We're working hard to bring you XML file processing.</p></div>
+                </section>
             </div>
-        </div>
+
+            <div id="content-corrector" class="tool-content hidden">
+                <section class="tool-card p-6 md:p-8">
+                    <div class="text-center mb-6">
+                        <h2 class="text-3xl font-bold text-gray-800">Relationship Corrector</h2>
+                        <p class="text-gray-600 mt-1">Fix out-of-sequence logic in XER & XML files.</p>
+                    </div>
+                    <div class="border-b border-gray-200 mb-6">
+                        <nav class="-mb-px flex space-x-6"><button id="sub-tab-rel-xer" class="tab-button whitespace-nowrap pb-4 px-1 border-b-2 font-semibold text-lg border-blue-500 text-blue-600">XER</button><button id="sub-tab-rel-xml" class="tab-button whitespace-nowrap pb-4 px-1 border-b-2 font-semibold text-lg border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300">XML</button></nav>
+                    </div>
+                    <div id="sub-content-rel-xer" class="sub-tab-content">
+                        <div class="space-y-6"><div id="drop-zone-corrector-xer" class="file-drop-zone flex items-center justify-center w-full h-32 border-2 border-gray-300 rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100"><label for="file-upload-corrector" class="flex flex-col items-center justify-center w-full h-full"><svg class="w-8 h-8 mb-2 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12"></path></svg><p class="mb-1 text-sm text-gray-500"><span class="font-semibold">Click to upload</span> or drag & drop</p><p id="file-name-corrector" class="text-xs text-gray-500">No XER file selected</p><input id="file-upload-corrector" type="file" class="hidden" accept=".xer"></label></div><div class="flex gap-4"><button id="process-btn-corrector" class="btn-animated w-full bg-teal-600 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-400" disabled>Process File</button><button id="download-btn-corrector" class="btn-animated w-full bg-purple-600 text-white font-bold py-3 px-4 rounded-lg disabled:bg-gray-400" disabled>Download File</button></div>
+                        <div id="spinner-corrector" class="hidden w-8 h-8 mx-auto spinner rounded-full border-4 border-gray-200"></div>
+                        <div id="progress-container-corrector" class="hidden w-full bg-gray-200 rounded-full mt-4">
+                            <div id="progress-bar-corrector" class="bg-teal-600 text-xs font-medium text-teal-100 text-center p-0.5 leading-none rounded-full transition-all duration-300 ease-in-out" style="width: 0%">0%</div>
+                        </div>
+                        <div id="results-container-corrector" class="results-container space-y-4"><h3 class="font-semibold text-lg text-gray-800">Processing Log & Results</h3><div id="log-corrector" class="p-3 bg-gray-900 text-white text-xs font-mono rounded-md h-24 overflow-y-auto"></div><div class="table-container border border-gray-200 rounded-lg"><table class="min-w-full divide-y divide-gray-200"><thead class="sticky-header"><tr><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Action</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Predecessor</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Successor</th><th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Details</th></tr></thead><tbody id="results-table-corrector" class="bg-white divide-y divide-gray-200"></tbody></table></div></div></div>
+                    </div>
+                     <div id="sub-content-rel-xml" class="sub-tab-content hidden">
+                        </div>
+                </section>
+            </div>
+        </main>
     </div>
 
 <script>
-    // --- IMPORTANT: Use the API Gateway endpoint for your Lambda function ---
-    const API_ENDPOINT = 'https://qi698s922h.execute-api.us-east-1.amazonaws.com/default/p6Corrector-v3'; 
+document.addEventListener('DOMContentLoaded', () => {
+    // --- CONFIGURATION ---
+    const API_ENDPOINT_CORRECTOR = 'https://qi698s922h.execute-api.us-east-1.amazonaws.com/default/p6Corrector-v3';
+    const API_ENDPOINT_UPDATER = 'https://ye0igwberc.execute-api.us-east-1.amazonaws.com/default/plannedequalactual';
 
-    const tabXer = document.getElementById('tab-xer');
-    const tabXml = document.getElementById('tab-xml');
-    const contentXer = document.getElementById('content-xer');
-    const contentXml = document.getElementById('content-xml');
-
-    function switchTab(activeTab) {
-        contentXer.classList.toggle('active', activeTab === 'xer');
-        contentXml.classList.toggle('active', activeTab === 'xml');
-        tabXer.classList.toggle('border-blue-500', activeTab === 'xer');
-        tabXer.classList.toggle('text-blue-600', activeTab === 'xer');
-        tabXer.classList.toggle('border-transparent', activeTab !== 'xer');
-        tabXer.classList.toggle('text-gray-500', activeTab !== 'xer');
-        tabXml.classList.toggle('border-blue-500', activeTab === 'xml');
-        tabXml.classList.toggle('text-blue-600', activeTab === 'xml');
-        tabXml.classList.toggle('border-transparent', activeTab !== 'xml');
-        tabXml.classList.toggle('text-gray-500', activeTab !== 'xml');
-    }
-    tabXer.addEventListener('click', () => switchTab('xer'));
-    tabXml.addEventListener('click', () => switchTab('xml'));
-
-    // --- NEW: Function to upload a file with progress tracking using XMLHttpRequest ---
+    // --- GENERIC HELPER FUNCTIONS ---
     function uploadFileWithProgress(url, file, onProgress) {
         return new Promise((resolve, reject) => {
             const xhr = new XMLHttpRequest();
             xhr.open('PUT', url, true);
-
-            xhr.upload.onprogress = (event) => {
-                if (event.lengthComputable) {
-                    const percentComplete = (event.loaded / event.total) * 100;
-                    onProgress(percentComplete); // Call the callback with the progress
-                }
-            };
-
+            xhr.upload.onprogress = (event) => { if (event.lengthComputable) { onProgress((event.loaded / event.total) * 100); } };
             xhr.onload = () => {
-                if (xhr.status >= 200 && xhr.status < 300) {
-                    resolve(xhr.response);
-                } else {
-                    reject(new Error(`Upload failed with status: ${xhr.status}`));
-                }
+                if (xhr.status >= 200 && xhr.status < 300) resolve(xhr.response);
+                else reject(new Error(`Upload failed: ${xhr.statusText}`));
             };
-
-            xhr.onerror = () => {
-                reject(new Error('Network error during upload.'));
-            };
-
+            xhr.onerror = () => reject(new Error('Network error during upload.'));
             xhr.send(file);
         });
     }
 
-    function setupCorrector(type) {
-        const fileUpload = document.getElementById(`file-upload-${type}`);
-        const fileNameDisplay = document.getElementById(`file-name-${type}`);
-        const processBtn = document.getElementById(`process-btn-${type}`);
-        const downloadBtn = document.getElementById(`download-btn-${type}`);
-        const logDiv = document.getElementById(`log-${type}`);
-        const resultsTable = document.getElementById(`results-table-${type}`);
-        const resultsContainer = document.getElementById(`results-container-${type}`);
-        const spinner = document.getElementById(`spinner-${type}`);
-        const noResultsMessage = document.getElementById(`no-results-message-${type}`);
-        const progressBar = document.getElementById(`progress-bar-${type}`);
-        const progressContainer = document.getElementById(`progress-container-${type}`);
+    function setupDragAndDrop(zoneId, inputId) {
+        const dropZone = document.getElementById(zoneId);
+        if (!dropZone) return;
+        const fileInput = document.getElementById(inputId);
+        dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.classList.add('dragover'); });
+        dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+        dropZone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropZone.classList.remove('dragover');
+            if (e.dataTransfer.files.length) {
+                fileInput.files = e.dataTransfer.files;
+                fileInput.dispatchEvent(new Event('change', { bubbles: true }));
+            }
+        });
+    }
 
-        let selectedFile = null;
-        let downloadUrl = '';
-        let modifiedFileName = '';
-        let processingInterval = null;
+    // --- NEW SIDEBAR NAVIGATION ---
+    function initializeSidebarNav() {
+        const navUpdater = document.getElementById('nav-updater');
+        const navCorrector = document.getElementById('nav-corrector');
+        const contentUpdater = document.getElementById('content-updater');
+        const contentCorrector = document.getElementById('content-corrector');
+        const navLinks = [navUpdater, navCorrector];
+        const contentPanes = [contentUpdater, contentCorrector];
 
+        function switchView(activeIndex) {
+            navLinks.forEach((link, index) => {
+                link.classList.toggle('active', index === activeIndex);
+            });
+            contentPanes.forEach((pane, index) => {
+                pane.classList.toggle('hidden', index !== activeIndex);
+            });
+        }
+
+        navUpdater.addEventListener('click', () => switchView(0));
+        navCorrector.addEventListener('click', () => switchView(1));
+        
+        switchView(0); // Set initial state
+    }
+
+    // --- SUB-TAB SWITCHING LOGIC ---
+    function setupSubTabs(tabIds, contentIds) {
+        const tabs = tabIds.map(id => document.getElementById(id));
+        const contents = contentIds.map(id => document.getElementById(id));
+
+        tabs.forEach((tab, index) => {
+            tab.addEventListener('click', () => {
+                // Style tabs
+                tabs.forEach(t => {
+                    t.classList.remove('border-blue-500', 'text-blue-600');
+                    t.classList.add('border-transparent', 'text-gray-500', 'hover:text-gray-700', 'hover:border-gray-300');
+                });
+                tab.classList.add('border-blue-500', 'text-blue-600');
+                tab.classList.remove('border-transparent', 'text-gray-500');
+
+                // Show/hide content
+                contents.forEach((content, contentIndex) => {
+                    content.classList.toggle('hidden', contentIndex !== index);
+                });
+            });
+        });
+    }
+
+
+    // --- INITIALIZE PROGRESS UPDATER ---
+    function initializeUpdaterTool() {
+        setupSubTabs(['sub-tab-upd-xer', 'sub-tab-upd-xml'], ['sub-content-upd-xer', 'sub-content-upd-xml']);
+        
+        const fileUpload = document.getElementById('file-upload-upd-xer');
+        const fileNameDisplay = document.getElementById('file-name-upd-xer');
+        const processBtn = document.getElementById('process-btn-upd-xer');
+        const downloadBtn = document.getElementById('download-btn-upd-xer');
+        const logDiv = document.getElementById('log-upd-xer');
+        const resultsTable = document.getElementById('results-table-upd-xer');
+        const resultsContainer = document.getElementById('results-container-upd-xer');
+        const spinner = document.getElementById('spinner-upd-xer');
+        const progressContainer = document.getElementById('progress-container-upd-xer');
+        const progressBar = document.getElementById('progress-bar-upd-xer');
+        let selectedFile = null, downloadUrl = '';
+        
+        setupDragAndDrop('drop-zone-upd-xer', 'file-upload-upd-xer');
         fileUpload.addEventListener('change', (event) => {
             const file = event.target.files[0];
             if (!file) return;
             selectedFile = file;
-            modifiedFileName = file.name.replace(`.${type}`, `_modified.${type}`);
             fileNameDisplay.textContent = file.name;
             processBtn.disabled = false;
             resetUI();
             log('File selected. Ready to process.');
         });
-
         processBtn.addEventListener('click', async () => {
             if (!selectedFile) return;
             resetUI();
-            // log('Requesting secure upload link...');
             processBtn.disabled = true;
             spinner.classList.remove('hidden');
-            resultsContainer.classList.remove('hidden');
             progressContainer.classList.remove('hidden');
-
+            resultsContainer.classList.add('visible');
             try {
-                // --- STEP 1: Get a presigned URL from Lambda ---
-                const getUrlResponse = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'getUploadUrl',
-                        fileName: selectedFile.name,
-                        fileType: type,
-                    }),
-                });
-                if (!getUrlResponse.ok) {
-                    const err = await getUrlResponse.json();
-                    throw new Error(err.message || 'Could not get an upload URL.');
-                }
+                const getUrlResponse = await fetch(API_ENDPOINT_UPDATER, { method: 'POST', body: JSON.stringify({ action: 'getUploadUrl', fileName: selectedFile.name, fileType: 'xer' }), });
+                if (!getUrlResponse.ok) throw new Error((await getUrlResponse.json()).message || 'Could not get upload URL.');
                 const { uploadUrl, s3Key } = await getUrlResponse.json();
-                
-                // log('Secure link received. Uploading file directly...', 'success');
-
-                // --- STEP 2: Upload the file directly to S3 with progress (0% -> 50%) ---
-                await uploadFileWithProgress(uploadUrl, selectedFile, (percent) => {
-                    progressBar.style.width = (percent / 2) + '%'; // Scale progress to 0-50 range
+                log('Processing file ...', 'success');
+                await uploadFileWithProgress(uploadUrl, selectedFile, (percentage) => {
+                    const percent = Math.round(percentage);
+                    progressBar.style.width = `${percent}%`;
+                    progressBar.textContent = `${percent}%`;
                 });
-                log(' Now processing...', 'success');
-                progressBar.style.width = '50%';
-
-                // --- STEP 2.5: Simulate processing progress (50% -> 95%) ---
-                let currentProgress = 50;
-                processingInterval = setInterval(() => {
-                    currentProgress += 1;
-                    if (currentProgress <= 95) {
-                        progressBar.style.width = currentProgress + '%';
-                    } else {
-                        clearInterval(processingInterval);
-                    }
-                }, 200); // Adjust interval for desired speed
-
-                // --- STEP 3: Tell Lambda to process the file from S3 ---
-                const processResponse = await fetch(API_ENDPOINT, {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        action: 'processFile',
-                        s3Key: s3Key,
-                        fileType: type,
-                        originalFileName: selectedFile.name 
-
-                    }),
-                });
-                if (!processResponse.ok) {
-                    const err = await processResponse.json();
-                    throw new Error(err.message || 'Processing request failed.');
-                }
-                
+                const processResponse = await fetch(API_ENDPOINT_UPDATER, { method: 'POST', body: JSON.stringify({ action: 'processFile', s3Key, fileType: 'xer', originalFileName: selectedFile.name }), });
+                if (!processResponse.ok) throw new Error((await processResponse.json()).message || 'Processing failed.');
                 const result = await processResponse.json();
-                
-                // --- STEP 4: Display the results ---
-                clearInterval(processingInterval); // Stop simulation
-                progressBar.style.width = '100%'; // Jump to 100% on completion
-
                 logDiv.innerHTML = result.logs.map(l => `<p class="whitespace-pre-wrap ${l.color || 'text-white'}">> ${l.message}</p>`).join('');
-                
                 if (result.resultsTable && result.resultsTable.length > 0) {
-                    resultsTable.innerHTML = result.resultsTable.map(row => 
-                        `<tr><td class="px-6 py-4 whitespace-nowrap text-sm font-semibold ${row.actionColor}">${row.action}</td><td class="px-6 py-4 whitespace-nowrap text-sm">${row.predCode}</td><td class="px-6 py-4 whitespace-nowrap text-sm">${row.succCode}</td><td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">${row.details}</td></tr>`
-                    ).join('');
-                } else {
-                    noResultsMessage.classList.remove('hidden');
+                    resultsTable.innerHTML = result.resultsTable.map(row => `<tr><td class="px-6 py-4 text-sm font-semibold ${row.actionColor}">${row.action}</td><td class="px-6 py-4 text-sm">${row.activityId || ''}</td><td class="px-6 py-4 text-sm">${row.details || ''}</td></tr>`).join('');
                 }
-
-                if (result.downloadUrl) {
-                    downloadUrl = result.downloadUrl;
-                    downloadBtn.disabled = false;
-                    log('Processing complete. Corrected file is ready for download.', 'success');
-                } else {
-                    // log('Processing complete. No changes were necessary.');
-                }
-
-            } catch (error) {
-                log(`An error occurred: ${error.message}`, 'error');
-                console.error(error);
-                if (processingInterval) clearInterval(processingInterval);
-                progressBar.style.backgroundColor = '#ef4444'; // Turn bar red on error
-            } finally {
-                spinner.classList.add('hidden');
-                processBtn.disabled = false;
-            }
+                if (result.downloadUrl) { downloadUrl = result.downloadUrl; downloadBtn.disabled = false; log('Processing complete. File ready for download.', 'success'); }
+            } catch (error) { log(`Error: ${error.message}`, 'error'); } finally { spinner.classList.add('hidden'); processBtn.disabled = false; }
         });
-
-        downloadBtn.addEventListener('click', () => {
-    if (!downloadUrl) {
-        log('No download URL available.', 'error');
-        return;
+        downloadBtn.addEventListener('click', () => { if (!downloadUrl) return; const link = document.createElement('a'); link.href = downloadUrl; document.body.appendChild(link); link.click(); document.body.removeChild(link); });
+        function resetUI() { 
+            resultsContainer.classList.remove('visible'); 
+            resultsTable.innerHTML = ''; 
+            downloadBtn.disabled = true; 
+            downloadUrl = ''; 
+            logDiv.innerHTML = ''; 
+            progressContainer.classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
+        }
+        function log(message, type = 'info') { const colorMap = { 'info': 'text-white', 'error': 'text-red-400', 'success': 'text-green-400' }; logDiv.innerHTML += `<p class="whitespace-pre-wrap ${colorMap[type] || 'text-white'}">> ${message}</p>`; logDiv.scrollTop = logDiv.scrollHeight; }
     }
-    const link = document.createElement('a');
-    link.href = downloadUrl;
-    link.download = ''; // Optionally specify a filename, e.g., 'corrected-file.xer'
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-    log('Download initiated.', 'success');
-});
 
-        function resetUI() {
-            resultsContainer.classList.add('hidden');
-            resultsTable.innerHTML = '';
-            downloadBtn.disabled = true;
-            downloadUrl = '';
+    // --- INITIALIZE RELATIONSHIP CORRECTOR ---
+    function initializeCorrectorTool() {
+        const fileUpload = document.getElementById('file-upload-corrector');
+        const fileNameDisplay = document.getElementById('file-name-corrector');
+        const processBtn = document.getElementById('process-btn-corrector');
+        const downloadBtn = document.getElementById('download-btn-corrector');
+        const logDiv = document.getElementById('log-corrector');
+        const resultsTable = document.getElementById('results-table-corrector');
+        const resultsContainer = document.getElementById('results-container-corrector');
+        const spinner = document.getElementById('spinner-corrector');
+        const progressContainer = document.getElementById('progress-container-corrector');
+        const progressBar = document.getElementById('progress-bar-corrector');
+        const xerTab = document.getElementById('sub-tab-rel-xer');
+        const xmlTab = document.getElementById('sub-tab-rel-xml');
+        let selectedFile = null, downloadUrl = '', currentFileType = 'xer';
+        
+        setupDragAndDrop('drop-zone-corrector-xer', 'file-upload-corrector');
+        
+        function updateFileAccept(type) {
+             currentFileType = type;
+             fileUpload.accept = `.${type}`;
+             fileNameDisplay.textContent = `No ${type.toUpperCase()} file selected`;
+             fileUpload.value = ''; selectedFile = null; processBtn.disabled = true; resetUI();
+        }
+        
+        setupSubTabs(['sub-tab-rel-xer', 'sub-tab-rel-xml'], []);
+        xerTab.addEventListener('click', () => updateFileAccept('xer'));
+        xmlTab.addEventListener('click', () => updateFileAccept('xml'));
+
+        fileUpload.addEventListener('change', (event) => {
+            const file = event.target.files[0];
+            if (!file) return;
+            selectedFile = file; fileNameDisplay.textContent = file.name; processBtn.disabled = false; resetUI(); log('File selected. Ready to process.');
+        });
+        processBtn.addEventListener('click', async () => {
+            if (!selectedFile) return;
+            resetUI();
+            processBtn.disabled = true;
+            spinner.classList.remove('hidden');
+            progressContainer.classList.remove('hidden');
+            resultsContainer.classList.add('visible');
+            try {
+                const getUrlResponse = await fetch(API_ENDPOINT_CORRECTOR, { method: 'POST', body: JSON.stringify({ action: 'getUploadUrl', fileName: selectedFile.name, fileType: currentFileType }), });
+                if (!getUrlResponse.ok) throw new Error((await getUrlResponse.json()).message || 'Could not get upload URL.');
+                const { uploadUrl, s3Key } = await getUrlResponse.json();
+                await uploadFileWithProgress(uploadUrl, selectedFile, (percentage) => {
+                    const percent = Math.round(percentage);
+                    progressBar.style.width = `${percent}%`;
+                    progressBar.textContent = `${percent}%`;
+                });
+                log('Processing file ...', 'success');
+                const processResponse = await fetch(API_ENDPOINT_CORRECTOR, { method: 'POST', body: JSON.stringify({ action: 'processFile', s3Key, fileType: currentFileType, originalFileName: selectedFile.name }), });
+                if (!processResponse.ok) throw new Error((await processResponse.json()).message || 'Processing failed.');
+                const result = await processResponse.json();
+                logDiv.innerHTML = result.logs.map(l => `<p class="whitespace-pre-wrap ${l.color || 'text-white'}">> ${l.message}</p>`).join('');
+                if (result.resultsTable && result.resultsTable.length > 0) {
+                    resultsTable.innerHTML = result.resultsTable.map(row => `<tr><td class="px-6 py-4 text-sm font-semibold ${row.actionColor}">${row.action}</td><td class="px-6 py-4 text-sm">${row.predCode}</td><td class="px-6 py-4 text-sm">${row.succCode}</td><td class="px-6 py-4 text-sm text-gray-500">${row.details}</td></tr>`).join('');
+                }
+                if (result.downloadUrl) { downloadUrl = result.downloadUrl; downloadBtn.disabled = false; log('Processing complete. File ready for download.', 'success'); }
+            } catch (error) { log(`Error: ${error.message}`, 'error'); } finally { spinner.classList.add('hidden'); processBtn.disabled = false; }
+        });
+        downloadBtn.addEventListener('click', () => { if (!downloadUrl) return; const link = document.createElement('a'); link.href = downloadUrl; document.body.appendChild(link); link.click(); document.body.removeChild(link); });
+        function resetUI() { 
+            resultsContainer.classList.remove('visible'); 
+            resultsTable.innerHTML = ''; 
+            downloadBtn.disabled = true; 
+            downloadUrl = ''; 
             logDiv.innerHTML = '';
-            noResultsMessage.classList.add('hidden');
-            if (progressContainer) progressContainer.classList.add('hidden');
-            if (progressBar) {
-                progressBar.style.width = '0%';
-                progressBar.style.backgroundColor = '#2563eb'; // Reset to blue
-            }
-            if (processingInterval) clearInterval(processingInterval);
+            progressContainer.classList.add('hidden');
+            progressBar.style.width = '0%';
+            progressBar.textContent = '0%';
         }
-
-        function log(message, type = 'info') {
-            const colorMap = { 'info': 'text-white', 'error': 'text-red-400', 'success': 'text-green-400', 'cyan': 'text-cyan-400' };
-            logDiv.innerHTML += `<p class="whitespace-pre-wrap ${colorMap[type] || 'text-white'}">> ${message}</p>`;
-            logDiv.scrollTop = logDiv.scrollHeight;
-        }
+        function log(message, type = 'info') { const colorMap = { 'info': 'text-white', 'error': 'text-red-400', 'success': 'text-green-400' }; logDiv.innerHTML += `<p class="whitespace-pre-wrap ${colorMap[type] || 'text-white'}">> ${message}</p>`; logDiv.scrollTop = logDiv.scrollHeight; }
     }
 
-    setupCorrector('xer');
-    setupCorrector('xml');
+    // Initialize all functionalities
+    initializeSidebarNav();
+    initializeUpdaterTool();
+    initializeCorrectorTool();
+});
 </script>
 
 </body>
